@@ -22,21 +22,19 @@
                [[0 0]])))
 
 (defn tail-positions [points]
-  (->> points
-       (reductions (fn [t h]
-                     (let [[dx dy] (map - h t)]
-                       (cond
-                         (> dx 1) (cond-> (update t 0 inc)
-                                    (not= 0 dy) (update 1 (if (pos? dy) inc dec)))
-                         (> dy 1) (cond-> (update t 1 inc)
-                                    (not= 0 dx) (update 0 (if (pos? dx) inc dec)))
-                         (> -1 dx) (cond-> (update t 0 dec)
-                                     (not= 0 dy) (update 1 (if (pos? dy) inc dec)))
-                         (> -1 dy) (cond-> (update t 1 dec)
-                                     (not= 0 dx) (update 0 (if (pos? dx) inc dec)))
-                         :else t)))
-                   [0 0])
-       next))
+  (reductions (fn [t h]
+                (let [[dx dy] (map - h t)]
+                  (cond
+                    (> dx 1) (cond-> (update t 0 inc)
+                               (not= 0 dy) (update 1 (if (pos? dy) inc dec)))
+                    (> dy 1) (cond-> (update t 1 inc)
+                               (not= 0 dx) (update 0 (if (pos? dx) inc dec)))
+                    (> -1 dx) (cond-> (update t 0 dec)
+                                (not= 0 dy) (update 1 (if (pos? dy) inc dec)))
+                    (> -1 dy) (cond-> (update t 1 dec)
+                                (not= 0 dx) (update 0 (if (pos? dx) inc dec)))
+                    :else t)))
+              points))
 
 (comment
 
