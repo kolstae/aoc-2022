@@ -1,6 +1,5 @@
 (ns day18
   (:require
-   [clojure.set :as set]
    [clojure.string :as str]))
 
 (def input (slurp (str "resources/" *ns* ".txt")))
@@ -10,6 +9,12 @@
   (defn surrounding-cubes [c]
     (map (partial update c) (cycle (range 3)) ops)))
 
+(defn surface-area [cubes]
+  (->> cubes
+       (mapcat surrounding-cubes)
+       (remove cubes)
+       count))
+
 (comment
 
  (let [_input small-input
@@ -17,10 +22,7 @@
                   (map (comp (partial mapv parse-long)
                              (partial re-seq #"\d+")))
                   set)]
-   (->> cubes
-        (mapcat surrounding-cubes)
-        (remove cubes)
-        count))
+   (surface-area cubes))
  ;; part-1 4288
 
  (let [_input small-input
@@ -28,30 +30,30 @@
                   (map (comp (partial mapv parse-long)
                              (partial re-seq #"\d+")))
                   set)
-       empty-cubes (into #{}
-                         (comp (mapcat surrounding-cubes)
-                               (remove cubes))
-                         cubes)
-       cubes (->> (loop [sets [#{(first empty-cubes)}] [c & cs] (next empty-cubes)]
-                    (if c
-                      (let [s-cs (surrounding-cubes c)]
-                        (if-some [ss (seq (filter #(some % s-cs) sets))]
-                          (recur (conj (remove (set ss) sets) (conj (apply set/union ss) c)) cs)
-                          (recur (conj sets #{c}) cs)))
-                      sets))
-                  (remove (fn [cs]
-                            (->> cs
-                                 (into #{} (comp (mapcat surrounding-cubes)
-                                                 (remove cs)
-                                                 (remove cubes)))
-                                 seq)))
-                  (mapcat identity)
-                  #_(into cubes))]
-   (sort cubes)
-   #_(->> cubes
-        (mapcat surrounding-cubes)
-        (remove cubes)
-        count))
- ;; TOO HIGH 3962
- ;; part-2
+       [min-edge max-edge] (apply (juxt min max) (mapcat identity cubes))
+       find-pocket (fn [cubes at-edge? c]
+                     (loop [stack #{c} closed #{}]
+                       (cond
+                         (some at-edge? (mapcat identity stack)) nil
+                         (empty? stack) closed
+                         :else (recur (into #{}
+                                            (comp (remove closed)
+                                                  (mapcat surrounding-cubes)
+                                                  (remove cubes))
+                                            stack)
+                                      (into closed stack)))))
+       cubes (->> (for [x (range min-edge (inc max-edge))
+                        y (range min-edge (inc max-edge))
+                        z (range min-edge (inc max-edge))
+                        :when (not (cubes [x y z]))]
+                    [x y z])
+                  (reduce (fn [pockets c]
+                            (or (when-not (pockets c)
+                                  (when-some [set (find-pocket cubes #{min-edge max-edge} c)]
+                                    (into pockets set)))
+                                pockets))
+                          #{})
+                  (into cubes))]
+   (surface-area cubes))
+ ;; part-2 2494
  )
